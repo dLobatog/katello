@@ -6,6 +6,7 @@ module Katello
 
       base.class_eval do
         lazy_accessor :productContent, :multiplier, :href, :attrs,
+# THE CULPRIT
           :initializer => lambda { |_s| convert_from_cp_fields(Resources::Candlepin::Product.get(cp_id)[0]) }
         # Certificate for this product - used for SSL certificate and key
         lazy_accessor :product_certificate,
@@ -108,7 +109,9 @@ module Katello
 
       def convert_from_cp_fields(cp_json)
         ar_safe_json = cp_json.key?(:attributes) ? cp_json.merge(:attrs => cp_json.delete(:attributes)) : cp_json
-        ar_safe_json[:productContent] = ar_safe_json[:productContent].collect { |pc| ::Katello::Candlepin::ProductContent.new(pc, self.id) }
+	if ar_safe_json[:productContent].present?
+	  ar_safe_json[:productContent] = ar_safe_json[:productContent].collect { |pc| ::Katello::Candlepin::ProductContent.new(pc, self.id) }
+	end
         ar_safe_json[:attrs] = remove_hibernate_fields(cp_json[:attrs]) if ar_safe_json.key?(:attrs)
         ar_safe_json[:attrs] ||= []
         ar_safe_json.except('id')

@@ -577,8 +577,11 @@ module Katello
             subscription
           end
 
-          def get_for_owner(owner_key)
-            content_json = Candlepin::CandlepinResource.get("/candlepin/owners/#{owner_key}/subscriptions", self.default_headers).body
+          def get_for_owner(owner_key, included = [])
+            included_list = included.map { |value| "include=#{value}" }.join('&')
+            content_json = Candlepin::CandlepinResource.get(
+		"/candlepin/owners/#{owner_key}/subscriptions?#{included_list}",
+		self.default_headers).body
             JSON.parse(content_json)
           end
 
@@ -633,7 +636,9 @@ module Katello
           end
 
           def get(id = nil)
-            products_json = super(path(id), self.default_headers).body
+            included = %w(name attributes.name attributes.value productContent.content.name) 
+            included_list = included.map { |value| "include=#{value}" }.join('&')
+            products_json = super(path(id + "/?#{included_list}"), self.default_headers).body
             products = JSON.parse(products_json)
             products = [products] unless id.nil?
             ::Katello::Util::Data.array_with_indifferent_access products
